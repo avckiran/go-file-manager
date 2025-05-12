@@ -2,13 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"cloud.google.com/go/storage"
 )
 
 func main() {
+
+	// Retrieving json file from GCS bucket
+
 	bucketName := "chandra-cloud-files-data-m512"
 	objectPath := "data/input/current/sample_item_1.json"
 
@@ -29,7 +34,59 @@ func main() {
 		log.Fatalf("Failed to download file: %v", err)
 	}
 
-	fmt.Println("File Content: ")
-	fmt.Println(string(content))
+	var inputRecord InputData
+
+	if err := json.Unmarshal(content, &inputRecord); err != nil {
+		log.Fatalf("Failed to unmarshal JSON: %v", err)
+	}
+
+	log.Println("Successfully unmarshalled JSON data!")
+
+	// API Data fetch for Cat Facts
+
+	apiUrl := "https://catfact.ninja/fact"
+
+	var catFactData ApiResponseData
+
+	if err := fetchAPIData(ctx, apiUrl, &catFactData); err != nil {
+		log.Fatalf("Failed to retrieve api data %v", err)
+	}
+	log.Println("Successfully fetched and unmarshalled API data!")
+	fmt.Printf("Cat Fact: %s (Length: %d)\n", catFactData.Fact, catFactData.Length)
+
+	log.Println("Aggregating the data")
+
+	aggregatedData := AggregatedRecord{
+		ItemID:         inputRecord.ItemId,
+		ItemName:       inputRecord.ItemName,
+		Quantity:       inputRecord.Quantity,
+		Color:          inputRecord.Attributes.Color,
+		Size:           inputRecord.Attributes.Size,
+		FetchedAPIData: catFactData.Fact,
+		APISource:      "Cat Facts API (Cat Ninja)",
+		ProcessingDate: time.Now().Format("2006-01-02"),
+	}
+
+	log.Println("Aggregation complete")
+	fmt.Printf("Aggregated Data: %+v\n", aggregatedData)
+
+	// Moving processed file to another location in GCS
+
+	log.Println("Moving processed file in GCS...")
+
+	_, destinationObjectPath := getProcessedFileName(objectPath)
+
+	err = copyGCSObject(ctx, client, bucketName, objectPath, destinationObjectPath)
+
+	if err != nil {
+		log.Printf("Error copying object, proceeding without deleting original: %v", err)
+	} else {
+		err = deleteGCSObject(ctx, client, bucketName, objectPath)
+		if err != nil {
+			log.Printf("Unable to delete the object %v", err)
+		} else {
+			log.Printf("Successfully moved the file to the processed folder!")
+		}
+	}
 
 }
