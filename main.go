@@ -63,7 +63,7 @@ func main() {
 		Color:          inputRecord.Attributes.Color,
 		Size:           inputRecord.Attributes.Size,
 		FetchedAPIData: catFactData.Fact,
-		APISource:      "Cat Facts API (Cat Ninja)",
+		APISource:      "Cat Facts (Cat Ninja)",
 		ProcessingDate: time.Now().Format("2006-01-02"),
 	}
 
