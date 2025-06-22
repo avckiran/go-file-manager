@@ -131,6 +131,21 @@ func main() {
 
 	archiveMasterFileIfExists(ctx, client, bucketName, masterOutputPath)
 
-	// Todo: Create a dummy file in the bucket and test the archive logic
+	log.Println("Creating aggregated excel file")
+
+	excelBytes, err := createExcelFile(aggregatedData)
+
+	if err != nil {
+		log.Fatalf("Failed to create excel file bytes: %v", err)
+	}
+	log.Printf("Excel file created in memory %d bytes", len(excelBytes))
+
+	err = uploadFile(ctx, client, bucketName, masterOutputPath, excelBytes)
+
+	if err != nil {
+		log.Fatalf("Failed to upload excel file : %v", err)
+	}
+
+	log.Println("-- Pipeline finished successfully --")
 
 }

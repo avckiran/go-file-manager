@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -77,9 +78,26 @@ func objectExists(ctx context.Context, client *storage.Client, bucketName, objec
 		return true, nil
 	}
 
-	if err == storage.ErrObjectNotExist {
+	if errors.Is(err, storage.ErrObjectNotExist) {
 		return false, nil
 	}
 
 	return false, fmt.Errorf("failed to check for object %s: %w", objectName, err)
+}
+
+func uploadFile(ctx context.Context, client *storage.Client, bucketName, objectPath string, data []byte) error {
+	obj := client.Bucket(bucketName).Object(objectPath)
+	wc := obj.NewWriter(ctx)
+
+	if _, err := wc.Write(data); err != nil {
+		return fmt.Errorf("failed to write data to GCS object %w", err)
+	}
+
+	if err := wc.Close(); err != nil {
+		return fmt.Errorf("failed to close GCS Object writer: %w", err)
+	}
+
+	log.Printf("Successfully uploaded file to gs: //%s/%s\n", bucketName, objectPath)
+
+	return nil
 }
