@@ -67,3 +67,19 @@ func getProcessedFileName(originalPath string) (string, string) {
 	return processedFileName, strings.ReplaceAll(destinationPath, "\\", "/")
 
 }
+
+func objectExists(ctx context.Context, client *storage.Client, bucketName, objectName string) (bool, error) {
+	obj := client.Bucket(bucketName).Object(objectName)
+
+	_, err := obj.Attrs(ctx)
+
+	if err == nil {
+		return true, nil
+	}
+
+	if err == storage.ErrObjectNotExist {
+		return false, nil
+	}
+
+	return false, fmt.Errorf("failed to check for object %s: %w", objectName, err)
+}

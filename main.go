@@ -89,4 +89,19 @@ func main() {
 		}
 	}
 
+	log.Println("Checking if a master excel file already exists!")
+
+	masterOutputPath := "data/output/master/final_file.xlsx"
+
+	exists, err := objectExists(ctx, client, bucketName, masterOutputPath)
+
+	if err != nil {
+		log.Fatalf("Failed to check for master file existence: %v", err)
+	}
+
+	if exists {
+		log.Printf("Existing master file found at %s. Archiving...", masterOutputPath)
+
+	}
+
 }
