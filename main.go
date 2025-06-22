@@ -5,10 +5,46 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
 )
+
+func archiveMasterFileIfExists(ctx context.Context, client *storage.Client, bucketName, masterOutputPath string) {
+	exists, err := objectExists(ctx, client, bucketName, masterOutputPath)
+
+	if err != nil {
+		log.Fatalf("Failed to check for master file existence: %v", err)
+	}
+
+	if exists {
+		log.Printf("Existing master file found at %s. Archiving...", masterOutputPath)
+
+		archiveDate := time.Now().Format("20060102_150405")
+		archiveFileName := fmt.Sprintf("final_file_%s.xlsx", archiveDate)
+		archivePath := filepath.Join("data", "output", "archive", archiveFileName)
+		archivePath = strings.ReplaceAll(archivePath, "\\", "/")
+
+		log.Printf("ARchive path %s", archivePath)
+
+		err := copyGCSObject(ctx, client, bucketName, masterOutputPath, archivePath)
+
+		if err != nil {
+			log.Fatalf("Failed to copy master file to archive: %v", err)
+		}
+
+		err = deleteGCSObject(ctx, client, bucketName, masterOutputPath)
+		if err != nil {
+			log.Fatalf("Failed to delete master file from the original path: %v", err)
+		}
+
+		log.Printf("Successfully archived the existing master file")
+	} else {
+		log.Println("No existing masterfile found")
+	}
+}
 
 func main() {
 
@@ -93,15 +129,8 @@ func main() {
 
 	masterOutputPath := "data/output/master/final_file.xlsx"
 
-	exists, err := objectExists(ctx, client, bucketName, masterOutputPath)
+	archiveMasterFileIfExists(ctx, client, bucketName, masterOutputPath)
 
-	if err != nil {
-		log.Fatalf("Failed to check for master file existence: %v", err)
-	}
-
-	if exists {
-		log.Printf("Existing master file found at %s. Archiving...", masterOutputPath)
-
-	}
+	// Todo: Create a dummy file in the bucket and test the archive logic
 
 }
