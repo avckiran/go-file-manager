@@ -9,7 +9,7 @@ type InputData struct {
 	ItemId     string     `json:"itemId"`
 	ItemName   string     `json:"itemName"`
 	Quantity   int        `json:"quantity"`
-	Attributes Attributes `json:"attributes"`
+	Attributes Attributes `json:"attributes,omitempty"`
 }
 
 type ApiResponseData struct {
